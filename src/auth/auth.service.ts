@@ -1,0 +1,124 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
+import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
+import { UserEntity } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
+import { AuthRepository } from './auth.repository';
+import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly authRepository: AuthRepository,
+    private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
+  ) {}
+
+  async register(dto: RegisterDto): Promise<AuthTokens> {
+    const user = await this.usersService.create(dto);
+    return this.issueTokens({
+      sub: user.id,
+      email: user.email,
+    });
+  }
+
+  async login(dto: LoginDto): Promise<AuthTokens> {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+
+    const matches = await bcrypt.compare(dto.password, user.password);
+    if (!matches) throw new UnauthorizedException('Invalid credentials');
+
+    return this.issueTokens({
+      sub: user.id,
+      email: user.email,
+    });
+  }
+
+  async refresh(refreshToken: string): Promise<AuthTokens> {
+    const payload = this.verifyRefreshToken(refreshToken);
+    const hash = this.hashToken(refreshToken);
+    const stored = await this.authRepository.findRefreshToken(hash);
+
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
+
+    // Rotate: revoke the old refresh token, issue a new pair
+    await this.authRepository.revokeRefreshToken(hash);
+
+    return this.issueTokens({
+      sub: payload.sub,
+      email: payload.email,
+    });
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    try {
+      this.verifyRefreshToken(refreshToken);
+    } catch {
+      // Silently ignore invalid tokens on logout
+      return;
+    }
+    const hash = this.hashToken(refreshToken);
+    const stored = await this.authRepository.findRefreshToken(hash);
+    if (stored && !stored.revokedAt) {
+      await this.authRepository.revokeRefreshToken(hash);
+    }
+  }
+
+  async me(userId: string): Promise<UserEntity> {
+    return this.usersService.findOne(userId);
+  }
+
+  private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.config.get<string>('jwt.accessSecret'),
+      expiresIn: this.config.get<string>(
+        'jwt.accessExpiresIn',
+        '15m',
+      ) as unknown as number,
+    });
+
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.config.get<string>('jwt.refreshSecret'),
+      expiresIn: this.config.get<string>(
+        'jwt.refreshExpiresIn',
+        '7d',
+      ) as unknown as number,
+    });
+
+    const decoded = this.jwtService.decode<{ exp: number }>(refreshToken);
+    await this.authRepository.createRefreshToken({
+      userId: payload.sub,
+      tokenHash: this.hashToken(refreshToken),
+      expiresAt: new Date(decoded.exp * 1000),
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  private verifyRefreshToken(token: string): JwtPayload {
+    try {
+      return this.jwtService.verify<JwtPayload>(token, {
+        secret: this.config.get<string>('jwt.refreshSecret'),
+      });
+    } catch {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+}
