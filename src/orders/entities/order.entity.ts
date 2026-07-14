@@ -7,7 +7,7 @@ export class OrderEntity {
   id: string;
 
   @ApiProperty()
-  userId: string;
+  userId: number;
 
   @ApiProperty()
   orderNumber: string;

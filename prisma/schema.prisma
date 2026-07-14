@@ -29,16 +29,54 @@ enum OrderStatus {
 }
 
 model User {
-  id        String     @id @default(uuid())
+  id        Int        @id @default(autoincrement())
   name      String
   email     String     @unique
   password  String
   status    UserStatus @default(ACTIVE)
+  roleId    Int?
+  role      Role?      @relation(fields: [roleId], references: [id])
   orders    Order[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
+  @@index([roleId])
   @@map("users")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  description String?
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  roles       RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
 }
 
 model Category {
@@ -89,7 +127,7 @@ model ProductVariant {
 
 model Order {
   id          String      @id @default(uuid())
-  userId      String
+  userId      Int
   user        User        @relation(fields: [userId], references: [id])
   orderNumber String      @unique
   total       Decimal     @db.Decimal(12, 2)
@@ -121,7 +159,7 @@ model OrderItem {
 
 model RefreshToken {
   id        String    @id @default(uuid())
-  userId    String
+  userId    Int
   tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?

@@ -1,11 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { User } from '@prisma/client';
+import type { Role, User } from '@prisma/client';
 import { Exclude } from 'class-transformer';
 import { UserStatus } from '../../common/enums/user-status.enum';
 
+export type UserWithRole = User & { role: Pick<Role, 'name'> | null };
+
 export class UserEntity {
   @ApiProperty()
-  id: string;
+  id: number;
 
   @ApiProperty()
   email: string;
@@ -16,6 +18,9 @@ export class UserEntity {
   @ApiProperty({ enum: UserStatus })
   status: UserStatus;
 
+  @ApiProperty({ required: false, nullable: true })
+  role: string | null;
+
   @Exclude()
   password: string;
 
@@ -25,11 +30,12 @@ export class UserEntity {
   @ApiProperty()
   updatedAt: Date;
 
-  constructor(user: User) {
+  constructor(user: UserWithRole) {
     this.id = user.id;
     this.email = user.email;
     this.name = user.name;
     this.status = user.status as UserStatus;
+    this.role = user.role?.name ?? null;
     this.password = user.password;
     this.createdAt = user.createdAt;
     this.updatedAt = user.updatedAt;

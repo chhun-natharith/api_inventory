@@ -29,13 +29,22 @@ Authorization: Bearer <your_access_token>
 ---
 
 ### Users (`/api/users`)
-| Method | Endpoint | Description | Controller |
-|--------|----------|-------------|------------|
-| POST | `/api/users` | Create a user | `users.controller.ts` |
-| GET | `/api/users` | List all users (paginated) | `users.controller.ts` |
-| GET | `/api/users/:id` | Get user by ID | `users.controller.ts` |
-| PATCH | `/api/users/:id` | Update a user | `users.controller.ts` |
-| DELETE | `/api/users/:id` | Delete a user | `users.controller.ts` |
+| Method | Endpoint | Description | Required Permission | Controller |
+|--------|----------|-------------|---------------------|------------|
+| POST | `/api/users` | Create a user | `users:write` | `users.controller.ts` |
+| GET | `/api/users` | List all users (paginated) | `users:read` | `users.controller.ts` |
+| GET | `/api/users/:id` | Get user by ID | `users:read` | `users.controller.ts` |
+| PATCH | `/api/users/:id` | Update a user | `users:write` | `users.controller.ts` |
+| PATCH | `/api/users/:id/role` | Change a user's role | `users:manage-roles` | `users.controller.ts` |
+| DELETE | `/api/users/:id` | Delete a user | `users:delete` | `users.controller.ts` |
+
+---
+
+### Roles (`/api/roles`)
+| Method | Endpoint | Description | Required Permission | Controller |
+|--------|----------|-------------|---------------------|------------|
+| GET | `/api/roles` | List all roles with their permissions | `users:manage-roles` | `roles.controller.ts` |
+| GET | `/api/roles/:id` | Get a role with its permissions | `users:manage-roles` | `roles.controller.ts` |
 
 ---
 

@@ -20,7 +20,7 @@ export class OrdersRepository {
    * whole transaction if any variant has insufficient stock.
    */
   async createWithItems(
-    userId: string,
+    userId: number,
     orderNumber: string,
     items: { productVariantId: string; quantity: number }[],
   ): Promise<OrderWithItems> {
@@ -81,16 +81,19 @@ export class OrdersRepository {
     });
   }
 
-  findAll(skip: number, take: number): Promise<Order[]> {
+  findAll(skip: number, take: number, userId?: number): Promise<Order[]> {
     return this.prisma.order.findMany({
+      where: userId ? { userId } : undefined,
       skip,
       take,
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  count(): Promise<number> {
-    return this.prisma.order.count();
+  count(userId?: number): Promise<number> {
+    return this.prisma.order.count({
+      where: userId ? { userId } : undefined,
+    });
   }
 
   findById(id: string): Promise<OrderWithItems | null> {

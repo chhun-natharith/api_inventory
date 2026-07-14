@@ -7,7 +7,7 @@ export class AuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   createRefreshToken(input: {
-    userId: string;
+    userId: number;
     tokenHash: string;
     expiresAt: Date;
   }): Promise<RefreshToken> {
@@ -25,7 +25,7 @@ export class AuthRepository {
     });
   }
 
-  revokeAllForUser(userId: string): Promise<{ count: number }> {
+  revokeAllForUser(userId: number): Promise<{ count: number }> {
     return this.prisma.refreshToken.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },

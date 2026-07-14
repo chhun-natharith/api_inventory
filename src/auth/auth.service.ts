@@ -1,10 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
 import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { UserEntity } from '../users/entities/user.entity';
+import { UserWithPermissions } from '../users/users.repository';
 import { UsersService } from '../users/users.service';
 import { AuthRepository } from './auth.repository';
 import { LoginDto } from './dto/login.dto';
@@ -25,24 +30,26 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
-    const user = await this.usersService.create(dto);
-    return this.issueTokens({
-      sub: user.id,
-      email: user.email,
-    });
+    const created = await this.usersService.create(dto); // defaults to Customer
+    const withPerms = await this.usersService.findByIdWithPermissions(
+      created.id,
+    );
+    if (!withPerms) {
+      throw new InternalServerErrorException(
+        'User created but could not be loaded with role/permissions',
+      );
+    }
+    return this.issueTokens(this.buildPayload(withPerms));
   }
 
   async login(dto: LoginDto): Promise<AuthTokens> {
-    const user = await this.usersService.findByEmail(dto.email);
+    const user = await this.usersService.findByEmailWithPermissions(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const matches = await bcrypt.compare(dto.password, user.password);
     if (!matches) throw new UnauthorizedException('Invalid credentials');
 
-    return this.issueTokens({
-      sub: user.id,
-      email: user.email,
-    });
+    return this.issueTokens(this.buildPayload(user));
   }
 
   async refresh(refreshToken: string): Promise<AuthTokens> {
@@ -54,13 +61,18 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    // Rotate: revoke the old refresh token, issue a new pair
+    // Re-read current role + permissions from the DB. This ensures that
+    // if an admin changed the user's role since the token was issued, the
+    // newly minted access token reflects those changes.
+    const user = await this.usersService.findByIdWithPermissions(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('User no longer exists');
+    }
+
+    // Rotate: revoke the old refresh token before issuing a new pair.
     await this.authRepository.revokeRefreshToken(hash);
 
-    return this.issueTokens({
-      sub: payload.sub,
-      email: payload.email,
-    });
+    return this.issueTokens(this.buildPayload(user));
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -77,8 +89,28 @@ export class AuthService {
     }
   }
 
-  async me(userId: string): Promise<UserEntity> {
+  async me(userId: number): Promise<UserEntity> {
     return this.usersService.findOne(userId);
+  }
+
+  /**
+   * Flattens the user's role and permissions into the JWT payload
+   * shape. The role and permission list are stored on the token so the
+   * `PermissionsGuard` can decide access without another DB roundtrip.
+   */
+  private buildPayload(user: UserWithPermissions): JwtPayload {
+    if (!user.role) {
+      // Guarantees FK integrity — every authenticated flow requires a role.
+      throw new InternalServerErrorException(
+        'User has no role assigned. Ensure roles are seeded.',
+      );
+    }
+    return {
+      sub: user.id,
+      email: user.email,
+      role: user.role.name,
+      permissions: user.role.permissions.map((rp) => rp.permission.name),
+    };
   }
 
   private async issueTokens(payload: JwtPayload): Promise<AuthTokens> {

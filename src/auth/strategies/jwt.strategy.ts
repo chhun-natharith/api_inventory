@@ -14,7 +14,17 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
+  /**
+   * Whatever this returns becomes `request.user`. We forward the full
+   * payload so downstream guards (PermissionsGuard) and decorators
+   * (CurrentUser) can read role + permissions without a DB hit.
+   */
   validate(payload: JwtPayload): JwtPayload {
-    return payload;
+    return {
+      sub: payload.sub,
+      email: payload.email,
+      role: payload.role,
+      permissions: payload.permissions ?? [],
+    };
   }
 }
