@@ -41,17 +41,22 @@ export class UsersRepository {
     return this.prisma.user.create({ data, include: roleWithName });
   }
 
-  findAll(skip: number, take: number): Promise<UserWithRoleName[]> {
+  findAll(
+    skip: number,
+    take: number,
+    where?: Prisma.UserWhereInput,
+  ): Promise<UserWithRoleName[]> {
     return this.prisma.user.findMany({
       skip,
       take,
+      where,
       orderBy: { createdAt: 'desc' },
       include: roleWithName,
     });
   }
 
-  count(): Promise<number> {
-    return this.prisma.user.count();
+  count(where?: Prisma.UserWhereInput): Promise<number> {
+    return this.prisma.user.count({ where });
   }
 
   findById(id: number): Promise<UserWithRoleName | null> {

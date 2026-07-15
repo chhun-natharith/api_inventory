@@ -16,8 +16,8 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '../common/constants';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
-import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { FilterUsersDto } from './dto/filter-users.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
@@ -39,8 +39,8 @@ export class UsersController {
   @Get()
   @RequirePermissions(PERMISSIONS.USERS_READ)
   @ApiOperation({ summary: 'List users' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.usersService.findAll(pagination);
+  findAll(@Query() filter: FilterUsersDto) {
+    return this.usersService.findAll(filter);
   }
 
   @Get(':id')

@@ -1,8 +1,10 @@
 import {
+  ForbiddenException,
   InternalServerErrorException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { UserStatus } from '../common/enums/user-status.enum';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -49,6 +51,10 @@ export class AuthService {
     const matches = await bcrypt.compare(dto.password, user.password);
     if (!matches) throw new UnauthorizedException('Invalid credentials');
 
+    if (user.status === UserStatus.INACTIVE) {
+      throw new ForbiddenException('Account is inactive');
+    }
+
     return this.issueTokens(this.buildPayload(user));
   }
 
@@ -67,6 +73,12 @@ export class AuthService {
     const user = await this.usersService.findByIdWithPermissions(payload.sub);
     if (!user) {
       throw new UnauthorizedException('User no longer exists');
+    }
+
+    if (user.status === UserStatus.INACTIVE) {
+      // Revoke the stored token so the user is fully logged out.
+      await this.authRepository.revokeRefreshToken(hash);
+      throw new ForbiddenException('Account is inactive');
     }
 
     // Rotate: revoke the old refresh token before issuing a new pair.

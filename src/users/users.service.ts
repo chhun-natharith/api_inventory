@@ -7,9 +7,9 @@ import {
 import type { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ROLES } from '../common/constants';
-import { PaginationDto } from '../common/dto/pagination.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { FilterUsersDto } from './dto/filter-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity } from './entities/user.entity';
 import {
@@ -61,13 +61,21 @@ export class UsersService {
     return new UserEntity(user);
   }
 
-  async findAll(pagination: PaginationDto) {
-    const { page, limit } = pagination;
+  async findAll(filter: FilterUsersDto) {
+    const { page, limit, name, email } = filter;
     const skip = (page - 1) * limit;
 
+    const where: Prisma.UserWhereInput = {};
+    if (name) {
+      where.name = { contains: name, mode: 'insensitive' };
+    }
+    if (email) {
+      where.email = { contains: email, mode: 'insensitive' };
+    }
+
     const [items, total] = await Promise.all([
-      this.usersRepository.findAll(skip, limit),
-      this.usersRepository.count(),
+      this.usersRepository.findAll(skip, limit, where),
+      this.usersRepository.count(where),
     ]);
 
     return {
