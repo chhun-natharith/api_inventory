@@ -104,4 +104,12 @@ export class UsersRepository {
   delete(id: number): Promise<UserWithRoleName> {
     return this.prisma.user.delete({ where: { id }, include: roleWithName });
   }
+
+  updateProfileImage(id: number, profileImage: string): Promise<UserWithRoleName> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { profileImage },
+      include: roleWithName,
+    });
+  }
 }

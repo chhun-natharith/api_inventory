@@ -7,6 +7,11 @@ import {
 import type { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { ROLES } from '../common/constants';
+import {
+  deleteFile,
+  getPublicFileUrl,
+  getFullFilePath,
+} from '../common/utils/file.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FilterUsersDto } from './dto/filter-users.dto';
@@ -128,8 +133,50 @@ export class UsersService {
   }
 
   async remove(id: number): Promise<void> {
-    await this.mustFindById(id);
+    const user = await this.mustFindById(id);
+
+    // Delete profile image if exists
+    if (user.profileImage) {
+      const fullPath = getFullFilePath(user.profileImage);
+      deleteFile(fullPath);
+    }
+
     await this.usersRepository.delete(id);
+  }
+
+  async uploadProfileImage(
+    id: number,
+    file: Express.Multer.File,
+  ): Promise<UserEntity> {
+    const user = await this.mustFindById(id);
+
+    // Delete old profile image if exists
+    if (user.profileImage) {
+      const fullPath = getFullFilePath(user.profileImage);
+      deleteFile(fullPath);
+    }
+
+    const imageUrl = getPublicFileUrl(file.path);
+    const updated = await this.usersRepository.updateProfileImage(id, imageUrl);
+    return new UserEntity(updated);
+  }
+
+  async deleteProfileImage(id: number): Promise<UserEntity> {
+    const user = await this.mustFindById(id);
+
+    if (!user.profileImage) {
+      throw new NotFoundException('No profile image found');
+    }
+
+    // Delete file from filesystem
+    const fullPath = getFullFilePath(user.profileImage);
+    deleteFile(fullPath);
+
+    const updated = await this.usersRepository.updateProfileImage(
+      id,
+      null as any,
+    );
+    return new UserEntity(updated);
   }
 
   private async mustFindById(id: number): Promise<UserWithRoleName> {

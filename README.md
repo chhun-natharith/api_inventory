@@ -23,7 +23,49 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Inventory Management API built with [Nest](https://github.com/nestjs/nest) framework.
+
+## Features
+
+- 🔐 **JWT Authentication** - Secure login with access and refresh tokens
+- 👥 **Role-Based Access Control (RBAC)** - Admin, Manager, Staff roles with granular permissions
+- 📦 **Product Management** - Products with variants, categories, and pricing
+- 🛒 **Order Management** - Complete order processing system
+- 📸 **Image Upload** - User profile images and product image galleries
+- 📊 **PostgreSQL Database** - With Prisma ORM
+- 📝 **API Documentation** - Swagger/OpenAPI integration
+- ✅ **Input Validation** - Using class-validator
+
+## Quick Start
+
+## Quick Start
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Setup Database
+```bash
+# Create .env file (copy from .env.example)
+cp .env.example .env
+
+# Run migrations
+npm run prisma:migrate
+
+# Seed database with initial data
+npx prisma db seed
+```
+
+### 3. Start Development Server
+```bash
+npm run start:dev
+```
+
+### 4. Access API Documentation
+```
+http://localhost:8200/docs
+```
 
 ## Project setup
 
@@ -56,6 +98,31 @@ $ pnpm run test:e2e
 # test coverage
 $ pnpm run test:cov
 ```
+
+## Documentation
+
+- **[ROUTES.md](ROUTES.md)** - Complete API endpoints reference
+- **[pattern.md](pattern.md)** - Project architecture and coding patterns
+- **[db.md](db.md)** - Database schema documentation
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login
+- `POST /api/auth/refresh` - Refresh access token
+- `GET /api/auth/me` - Get current user
+
+### Users
+- `GET /api/users` - List users
+- `POST /api/users/:id/profile-image` - Upload profile image
+
+### Products
+- `GET /api/products` - List products
+- `POST /api/products/:id/images` - Upload product images
+- `GET /api/products/:id/images` - Get product gallery
+
+See [ROUTES.md](ROUTES.md) for complete endpoint documentation.
 
 ## Deployment
 

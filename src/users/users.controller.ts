@@ -11,11 +11,20 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PERMISSIONS } from '../common/constants';
 import { RequirePermissions } from '../common/decorators/require-permissions.decorator';
+import { userImageMulterConfig } from '../config/multer.config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { FilterUsersDto } from './dto/filter-users.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
@@ -73,5 +82,59 @@ export class UsersController {
   @ApiOperation({ summary: 'Delete a user' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);
+  }
+
+  @Post(':id/profile-image')
+  @RequirePermissions(PERMISSIONS.USERS_WRITE)
+  @UseInterceptors(FileInterceptor('image', userImageMulterConfig))
+  @ApiOperation({ summary: 'Upload user profile image' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  uploadProfileImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadProfileImage(id, file);
+  }
+
+  @Patch(':id/profile-image')
+  @RequirePermissions(PERMISSIONS.USERS_WRITE)
+  @UseInterceptors(FileInterceptor('image', userImageMulterConfig))
+  @ApiOperation({ summary: 'Update user profile image' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  updateProfileImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.usersService.uploadProfileImage(id, file);
+  }
+
+  @Delete(':id/profile-image')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermissions(PERMISSIONS.USERS_WRITE)
+  @ApiOperation({ summary: 'Delete user profile image' })
+  deleteProfileImage(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.deleteProfileImage(id);
   }
 }

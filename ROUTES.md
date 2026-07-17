@@ -37,6 +37,9 @@ Authorization: Bearer <your_access_token>
 | PATCH | `/api/users/:id` | Update a user | `users:write` | `users.controller.ts` |
 | PATCH | `/api/users/:id/role` | Change a user's role | `users:manage-roles` | `users.controller.ts` |
 | DELETE | `/api/users/:id` | Delete a user | `users:delete` | `users.controller.ts` |
+| POST | `/api/users/:id/profile-image` | Upload profile image | `users:write` | `users.controller.ts` |
+| PATCH | `/api/users/:id/profile-image` | Update profile image | `users:write` | `users.controller.ts` |
+| DELETE | `/api/users/:id/profile-image` | Delete profile image | `users:write` | `users.controller.ts` |
 
 ---
 
@@ -60,13 +63,19 @@ Authorization: Bearer <your_access_token>
 ---
 
 ### Products (`/api/products`)
-| Method | Endpoint | Description | Controller |
-|--------|----------|-------------|------------|
-| POST | `/api/products` | Create a product | `products.controller.ts` |
-| GET | `/api/products` | List all products (paginated) | `products.controller.ts` |
-| GET | `/api/products/:id` | Get product by ID | `products.controller.ts` |
-| PATCH | `/api/products/:id` | Update a product | `products.controller.ts` |
-| DELETE | `/api/products/:id` | Delete a product | `products.controller.ts` |
+| Method | Endpoint | Description | Required Permission | Controller |
+|--------|----------|-------------|---------------------|------------|
+| POST | `/api/products` | Create a product | `products:write` | `products.controller.ts` |
+| GET | `/api/products` | List all products (paginated) | `products:read` | `products.controller.ts` |
+| GET | `/api/products/:id` | Get product by ID | `products:read` | `products.controller.ts` |
+| PATCH | `/api/products/:id` | Update a product | `products:write` | `products.controller.ts` |
+| DELETE | `/api/products/:id` | Delete a product | `products:delete` | `products.controller.ts` |
+| POST | `/api/products/:id/images` | Upload product image | `products:write` | `products.controller.ts` |
+| GET | `/api/products/:id/images` | Get all product images | `products:read` | `products.controller.ts` |
+| GET | `/api/products/:id/images/:imageId` | Get single product image | `products:read` | `products.controller.ts` |
+| PATCH | `/api/products/:id/images/:imageId` | Update image metadata | `products:write` | `products.controller.ts` |
+| PATCH | `/api/products/:id/images/:imageId/primary` | Set image as primary | `products:write` | `products.controller.ts` |
+| DELETE | `/api/products/:id/images/:imageId` | Delete product image | `products:delete` | `products.controller.ts` |
 
 ---
 

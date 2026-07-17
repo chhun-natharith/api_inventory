@@ -21,6 +21,9 @@ export class UserEntity {
   @ApiProperty({ required: false, nullable: true })
   role: string | null;
 
+  @ApiProperty({ required: false, nullable: true })
+  profileImage: string | null;
+
   @Exclude()
   password: string;
 
@@ -36,6 +39,7 @@ export class UserEntity {
     this.name = user.name;
     this.status = user.status as UserStatus;
     this.role = user.role?.name ?? null;
+    this.profileImage = user.profileImage ?? null;
     this.password = user.password;
     this.createdAt = user.createdAt;
     this.updatedAt = user.updatedAt;

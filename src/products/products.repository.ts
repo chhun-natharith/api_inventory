@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Product } from '@prisma/client';
+import { Prisma, Product, ProductImage } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -32,5 +32,51 @@ export class ProductsRepository {
 
   delete(id: string): Promise<Product> {
     return this.prisma.product.delete({ where: { id } });
+  }
+
+  // Product Image methods
+  createImage(data: Prisma.ProductImageCreateInput): Promise<ProductImage> {
+    return this.prisma.productImage.create({ data });
+  }
+
+  findImagesByProductId(productId: string): Promise<ProductImage[]> {
+    return this.prisma.productImage.findMany({
+      where: { productId },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  findImageById(id: string): Promise<ProductImage | null> {
+    return this.prisma.productImage.findUnique({ where: { id } });
+  }
+
+  updateImage(
+    id: string,
+    data: Prisma.ProductImageUpdateInput,
+  ): Promise<ProductImage> {
+    return this.prisma.productImage.update({ where: { id }, data });
+  }
+
+  deleteImage(id: string): Promise<ProductImage> {
+    return this.prisma.productImage.delete({ where: { id } });
+  }
+
+  deleteImagesByProductId(productId: string): Promise<Prisma.BatchPayload> {
+    return this.prisma.productImage.deleteMany({ where: { productId } });
+  }
+
+  async setPrimaryImage(productId: string, imageId: string): Promise<void> {
+    await this.prisma.$transaction([
+      // Remove primary flag from all images
+      this.prisma.productImage.updateMany({
+        where: { productId, isPrimary: true },
+        data: { isPrimary: false },
+      }),
+      // Set the specified image as primary
+      this.prisma.productImage.update({
+        where: { id: imageId },
+        data: { isPrimary: true },
+      }),
+    ]);
   }
 }

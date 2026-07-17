@@ -29,16 +29,17 @@ enum OrderStatus {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  name      String
-  email     String     @unique
-  password  String
-  status    UserStatus @default(ACTIVE)
-  roleId    Int?
-  role      Role?      @relation(fields: [roleId], references: [id])
-  orders    Order[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id           Int        @id @default(autoincrement())
+  name         String
+  email        String     @unique
+  password     String
+  profileImage String?
+  status       UserStatus @default(ACTIVE)
+  roleId       Int?
+  role         Role?      @relation(fields: [roleId], references: [id])
+  orders       Order[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   @@index([roleId])
   @@map("users")
@@ -99,6 +100,7 @@ model Product {
   image       String?
   status      ProductStatus    @default(ACTIVE)
   variants    ProductVariant[]
+  images      ProductImage[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
@@ -167,4 +169,19 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  altText   String?
+  order     Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@map("product_images")
 }
